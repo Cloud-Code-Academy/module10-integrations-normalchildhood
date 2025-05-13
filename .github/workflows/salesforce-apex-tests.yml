@@ -1,0 +1,23 @@
+name: Run Apex Tests on PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  add-label:
+    if: github.triggering_actor != 'github-classroom[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Add Needs Review label
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  reuse-apex-tests:
+    if: github.triggering_actor != 'github-classroom[bot]'
+    uses: Cloud-Code-Academy/developer-kickstart-materials/.github/workflows/salesforce-apex-tests.yml@main
+    secrets: inherit

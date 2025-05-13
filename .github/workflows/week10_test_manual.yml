@@ -1,0 +1,55 @@
+name: Week 10 Run Apex Unit Tests Manually
+
+on:
+    workflow_dispatch:
+        inputs:
+            sfdx_auth_url:
+                description: "SFDX Auth URL"
+                required: true
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install sfdx with npm
+              run: |
+                  npm i @salesforce/cli --global
+
+            - name: Store SFDX Auth URL In File
+              run: | #sfdx force:org:display --verbose > Sfdx Auth URL
+                  echo "${{ github.event.inputs.sfdx_auth_url }}" > sfdxauth.txt
+
+            - name: Add SFDX Org
+              run: |
+                  sf force auth sfdxurl store -f sfdxauth.txt -a org
+
+            - name: Deploy External Credentials
+              run: |
+                  sf force source deploy -u org -p force-app/main/default/externalCredentials/
+
+            - name: Deploy Named Credentials
+              run: |
+                  sf force source deploy -u org -p force-app/main/default/namedCredentials/
+
+            - name: Deploy objects
+              run: |
+                  sf force source deploy -u org -p force-app/main/default/objects/
+
+            - name: Deploy Permission Sets
+              run: |
+                  sf force source deploy -u org -p force-app/main/default/permissionsets/
+
+            - name: Deploy classes to org
+              run: |
+                  sf force source deploy -u org -p force-app/main/default/classes/
+
+            - name: Deploy triggers
+              run: |
+                  sf force source deploy -u org -p force-app/main/default/triggers/
+
+            - name: Run Apex Unit Tests
+              run: |
+                  sf apex run test -r human -c --wait 10 -o org -n DummyJSONCalloutTest
