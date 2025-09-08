@@ -39,18 +39,19 @@ public with sharing class DummyJSONCallout {
         Http http = new http();
         HttpRequest request = new HttpRequest();
         // Set the endpoint URL. Use direct URL or for best practices use Named Credential.
-        request.setEndpoint('callout:DummyJsonUser/https://dummyjson.com/user/');
+        request.setEndpoint('callout:DummyJsonUser/https://dummyjson.com/user/{dummyUserId}');
         // Set the HTTP method to GET.
         request.setMethod('GET');
         // Send the HTTP request and get the response.
         HttpResponse response = http.send(request);
         // If the HTTP response code is successful, parse the JSON response and update the contact.
-		Contact cont = null;
+        Contact cont = null;
         if (response.getStatusCode() == 200) {
-        upsert cont DummyJSON_Id__c; //insert/update from the JSON response using the external id (dummyUserId)
-		}
+            cont = createContactFromJson(response.getBody());
+            
+            upsert cont DummyJSON_Id__c; //insert/update from the JSON response using the external id (dummyUserId)
+        }
     }
-    
     /*
      * Question 2
      * Transforms a JSON response from the external system https://dummyjson.com/users into a Salesforce Contact object.
@@ -67,18 +68,28 @@ public with sharing class DummyJSONCallout {
      * @return Contact The Salesforce Contact object populated with details from the JSON string.
      */
     @TestVisible // Allows test class to see this method. Since it is private, it would not be visible otherwise.
+    
     private static Contact createContactFromJson(String jsonResponse) {
         // Deserialize the JSON string into map of primitive data types.
-        
+        Map<String, Object> jsonMap = (Map<String, Object>) JSON.deserializeUntyped(jsonResponse);
         // Create a new contact from the JSON response.
-        
+        Contact cont = new Contact ();
         // Set the contact fields from the JSON response.
-        
+        cont.FirstName = (String) jsonMap.get('firstname');
+        cont.LastName = (String) jsonMap.get('lastname');
+        cont.Email = (String) jsonMap.get('email');
+        cont.Phone = (String) jsonMap.get('phone');
+        cont.DummyJSON_Last_Updated__c = System.now();
         // Deserialize the address from the JSON response.
-        
+        Map<String, Object> addressMap = (Map<String, Object>) jsonMap.get('address');
         // Set the address fields on the contact.
+        cont.MailingStreet = (String) jsonMap.get('address');
+        cont.MailingCity = (String) jsonMap.get('city');
+        cont.MailingState = (String) jsonMap.get('state');
+        cont.MailingPostalCode = (String) jsonMap.get('postalcode');
         
-        return null;
+        insert cont;
+        return cont;
     }
     
     /*
